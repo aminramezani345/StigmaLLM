@@ -1,4 +1,3 @@
-in below code , next to each "Highlight" tab put a tabe name " add comments" that get user text as input comment:
 
 import os
 import json
