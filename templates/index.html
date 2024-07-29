@@ -4,7 +4,12 @@
     <title>Stigma Highlighting</title>
     <style>
         body {
-            background-color: #f0f0f0; /* Change background color */
+            background-image: url("/static/images/background.jpg"); /* Path to your background image */
+            background-size: cover; /* Cover the entire page */
+            background-repeat: no-repeat; /* Prevent background repetition */
+            background-attachment: fixed; /* Keep background fixed on scroll */
+            background-position: center; /* Center the background image */
+            color: white; /* Text color for readability */
         }
         .highlight-keyword {
             background-color: red; /* Highlight keyword in red */
@@ -13,13 +18,15 @@
         }
         .highlight-text {
             background-color: yellow; /* Highlight surrounding text in yellow */
+            color: black; /* Text color for readability */
         }
         table, th, td {
-            border: 1px solid black;
+            border: 1px solid white; /* White border for table */
             border-collapse: collapse;
             padding: 8px;
+            color: white; /* Text color for readability */
         }
-        th { background-color: #f2f2f2; }
+        th { background-color: rgba(0, 0, 0, 0.5); } /* Semi-transparent background for table headers */
     </style>
     <script>
         function highlightText(event, start, end) {
