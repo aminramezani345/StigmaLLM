@@ -1,2 +1,6 @@
 Flask
 gunicorn
+flask
+transformers
+torch
+PyPDF2
