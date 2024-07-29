@@ -1,1 +1,106 @@
-html_files
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Stigma Highlighting</title>
+    <style>
+        body {
+            background-image: url("/static/images/background.jpg"); /* Path to your background image */
+            background-size: cover; /* Cover the entire page */
+            background-repeat: no-repeat; /* Prevent background repetition */
+            background-attachment: fixed; /* Keep background fixed on scroll */
+            background-position: center; /* Center the background image */
+            color: white; /* Text color for readability */
+        }
+        .highlight-keyword {
+            background-color: red; /* Highlight keyword in red */
+            color: white; /* Text color for readability */
+            font-weight: bold; /* Bold text for emphasis */
+        }
+        .highlight-text {
+            background-color: yellow; /* Highlight surrounding text in yellow */
+            color: black; /* Text color for readability */
+        }
+        table, th, td {
+            border: 1px solid white; /* White border for table */
+            border-collapse: collapse;
+            padding: 8px;
+            color: white; /* Text color for readability */
+        }
+        th { background-color: rgba(0, 0, 0, 0.5); } /* Semi-transparent background for table headers */
+    </style>
+    <script>
+        function highlightText(event, start, end) {
+            event.preventDefault();
+
+            var textarea = document.getElementById('main_text');
+            var text = textarea.value;
+
+            // Clear previous highlighting
+            var newText = text.replace(/<span[^>]*>/g, '');
+
+            // Apply new highlighting
+            newText = newText.substring(0, start-20) +
+                      '<span class="highlight-text">' + 
+                      text.substring(start-20, start-1) + 
+                      '</span>'+ 
+                      '<span class="highlight-keyword">' + 
+                      text.substring(start-1, start+7) + 
+                      '</span>' + 
+                      '<span class="highlight-text">' + 
+                      text.substring(start+7, end+30) + 
+                      '</span>'+
+                      newText.substring(end+20);
+
+            // Update the displayed text container with HTML content
+            document.getElementById('highlighted_text_container').innerHTML = newText;
+        }
+    </script>
+</head>
+<body>
+    <h1 style="text-align: center;">Stigma Highlighting Tool</h1>
+    <form method="post" enctype="multipart/form-data">
+        <label for="file">Upload a text or PDF file:</label><br>
+        <input type="file" id="file" name="file"><br><br>
+        <button type="submit" name="upload_file">Upload File</button>
+    </form>
+    <textarea id="main_text" style="display:none;">{{ main_text|safe }}</textarea>
+    <div id="highlighted_text_container" style="white-space: pre-wrap;">{{ main_text|safe }}</div>
+    {% if stigma_results %}
+        <h2>Search Results:</h2>
+        <table>
+            <tr>
+                <th>Keyword</th>
+                <th>Keyword_Category</th>
+                <th>Context</th>
+                <th>Action</th>
+            </tr>
+            {% for result in stigma_results %}
+                <tr>
+                    <td>{{ result.keyword }}</td>
+                    <td>{{ result.keyword_category }}</td>
+                    <td>{{ result.text }}</td>
+                    <td>
+                        <button onclick="highlightText(event, {{ result.start }}, {{ result.end }})">Highlight</button>
+                    </td>
+                </tr>
+            {% endfor %}
+        </table>
+    {% endif %}
+    {% if predictions %}
+        <h2>Predictions:</h2>
+        <table>
+            <tr>
+                <th>Category</th>
+                <th>Score</th>
+            </tr>
+            {% for prediction in predictions %}
+                <tr>
+                    <td>{{ prediction[0] }}</td>
+                    <td>{{ prediction[1] }}</td>
+                </tr>
+            {% endfor %}
+        </table>
+    {% endif %}
+</body>
+</html>
+
