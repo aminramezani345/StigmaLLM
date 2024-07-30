@@ -3,7 +3,7 @@ import os
 import json
 import torch
 from transformers import BertTokenizer
-from flask import Flask, render_template_string, request, redirect, url_for
+from flask import Flask, render_template, request, redirect
 import threading
 import webbrowser
 from PyPDF2 import PdfReader
@@ -172,106 +172,6 @@ class StigmaBertModel(object):
             results.append(res)
         return results
 
-template = """
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Stigma Highlighting</title>
-    <style>
-        body {
-            background-color: #f0f0f0; /* Change background color */
-        }
-        .highlight-keyword {
-            background-color: red; /* Highlight keyword in red */
-            color: white; /* Text color for readability */
-            font-weight: bold; /* Bold text for emphasis */
-        }
-        .highlight-text {
-            background-color: yellow; /* Highlight surrounding text in yellow */
-        }
-        table, th, td {
-            border: 1px solid black;
-            border-collapse: collapse;
-            padding: 8px;
-        }
-        th { background-color: #f2f2f2; }
-    </style>
-    <script>
-        function highlightText(event, start, end) {
-            event.preventDefault();
-
-            var textarea = document.getElementById('main_text');
-            var text = textarea.value;
-
-            // Clear previous highlighting
-            var newText = text.replace(/<span[^>]*>/g, '');
-
-            // Apply new highlighting
-            newText = newText.substring(0, start-20) +
-                      '<span class="highlight-text">' + 
-                      text.substring(start-20, start-1) + 
-                      '</span>'+ 
-                      '<span class="highlight-keyword">' + 
-                      text.substring(start-1, start+7) + 
-                      '</span>' + 
-                      '<span class="highlight-text">' + 
-                      text.substring(start+7, end+30) + 
-                      '</span>'+
-                      newText.substring(end+20);
-
-            // Update the displayed text container with HTML content
-            document.getElementById('highlighted_text_container').innerHTML = newText;
-        }
-    </script>
-</head>
-<body>
-    <h1 style="text-align: center;">Stigma Highlighting Tool</h1>
-    <form method="post" enctype="multipart/form-data">
-        <label for="file">Upload a text or PDF file:</label><br>
-        <input type="file" id="file" name="file"><br><br>
-        <button type="submit" name="upload_file">Upload File</button>
-    </form>
-    <textarea id="main_text" style="display:none;">{{ main_text|safe }}</textarea>
-    <div id="highlighted_text_container" style="white-space: pre-wrap;">{{ main_text|safe }}</div>
-    {% if stigma_results %}
-        <h2>Search Results:</h2>
-        <table>
-            <tr>
-                <th>Keyword</th>
-                <th>Keyword_Category</th>
-                <th>Context</th>
-                <th>Action</th>
-            </tr>
-            {% for result in stigma_results %}
-                <tr>
-                    <td>{{ result.keyword }}</td>
-                    <td>{{ result.keyword_category }}</td>
-                    <td>{{ result.text }}</td>
-                    <td>
-                        <button onclick="highlightText(event, {{ result.start }}, {{ result.end }})">Highlight</button>
-                    </td>
-                </tr>
-            {% endfor %}
-        </table>
-    {% endif %}
-    {% if predictions %}
-        <h2>Predictions:</h2>
-        <table>
-            <tr>
-                <th>Category</th>
-                <th>Score</th>
-            </tr>
-            {% for prediction in predictions %}
-                <tr>
-                    <td>{{ prediction[0] }}</td>
-                    <td>{{ prediction[1] }}</td>
-                </tr>
-            {% endfor %}
-        </table>
-    {% endif %}
-</body>
-</html>
-"""
 
 @app.route("/", methods=["GET", "POST"])
 def index():
@@ -282,6 +182,7 @@ def index():
         if file.filename == '':
             return redirect(request.url)
         if file:
+            file_name = file.filename.rsplit('.', 1)[0]  # Extract file name without extension
             if file.filename.endswith('.txt'):
                 main_text = file.read().decode('utf-8')
             elif file.filename.endswith('.pdf'):
@@ -292,11 +193,39 @@ def index():
 
             stigma_search = StigmaSearch()
             stigma_results = stigma_search.search(main_text)
-            return render_template_string(template, main_text=main_text, stigma_results=stigma_results)
-    return render_template_string(template, main_text="")
+            
+            # Pass the file name and results to the template or JavaScript
+            return render_template("index.html", main_text=main_text, stigma_results=stigma_results, file_name=file_name)
+    return render_template("index.html", main_text="")
+
+@app.route("/save_results", methods=["POST"])
+@app.route("/save_results", methods=["POST"])
+def save_results():
+    file_name = request.form.get('file_name')
+    data = request.form.get('data')
+    
+    # Debugging: Print the received values
+    print(f"Received file_name: {file_name}")
+    print(f"Received data: {data[:100]}...")  # Print only a snippet of the data for safety
+
+    if not file_name or not data:
+        return "Missing file name or data"
+
+    # Define the path where you want to save the results
+    save_path = os.path.join(r'C:\Users\u249391\Downloads\STIGMA_LLM_APP\saved_results', f"{file_name}_results.json")
+
+    # Save the data to a file
+    try:
+        with open(save_path, 'w') as f:
+            json.dump(json.loads(data), f, indent=2)
+        return "Results saved successfully"
+    except Exception as e:
+        print(f"Error saving results: {e}")
+        return "Error saving results"
+
 
 if __name__ == "__main__":
-    port = 5000 + os.getpid()
+    port = 5000
     url = f"http://127.0.0.1:{port}"
     threading.Timer(1.25, lambda: webbrowser.open(url)).start()
     app.run(port=port, debug=False)
